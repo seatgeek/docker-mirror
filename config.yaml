@@ -1,0 +1,31 @@
+---
+target:
+  registry: ACCOUNT_ID.dkr.REGION.amazonaws.com
+  prefix: "hub/"
+
+repositories:
+  - name: elasticsearch
+    max_tag_age: 4w
+    ignore_tag:
+      - "*-alpine"
+
+  - name: redis
+    max_tag_age: 4w
+    match_tag:
+        - "3*"
+        - "4*"
+        - "latest"
+    ignore_tag:
+      - "*32bit*"
+      - "*alpine*"
+      - "*nanoserver*"
+      - "*windowsservercore*"
+
+  - name: yotpo/resec
+    max_tag_age: 4w
+
+  - name: jippi/hashi-ui
+    max_tag_age: 4w
+    match_tag:
+      - "v*"
+

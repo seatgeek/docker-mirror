@@ -1,0 +1,5 @@
+vendor/
+build/
+coverage.txt
+codecov.bash
+cover/
