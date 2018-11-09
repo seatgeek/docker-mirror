@@ -1,3 +1,9 @@
+# docker-mirror
+
+This project will copy public DockerHub repositories to a private registry.
+
+It's possible to filter by docker tags, tag age and number of latest tags.
+
 <!-- TOC -->
 
 - [docker-mirror](#docker-mirror)
@@ -9,12 +15,6 @@
     - [Example config.yaml](#example-configyaml)
 
 <!-- /TOC -->
-
-# docker-mirror
-
-This project will copy public DockerHub repositories to a private registry.
-
-It's possible to filter by docker tags, tag age and number of latest tags.
 
 ## Install / Building
 
