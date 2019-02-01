@@ -5,7 +5,7 @@ RUN apk add --update ca-certificates git \
 RUN go get -u github.com/golang/dep/cmd/dep
 WORKDIR /go/src/github.com/seatgeek/docker-mirror/
 COPY . /go/src/github.com/seatgeek/docker-mirror/
-RUN dep ensure
+RUN dep ensure -v
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/docker-mirror  .
 
 FROM alpine:latest
