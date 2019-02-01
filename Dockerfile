@@ -11,4 +11,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/docker-mirr
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=0 /go/src/github.com/seatgeek/docker-mirror/build/docker-mirror /usr/local/bin/
-CMD ["./docker-mirror"]
+CMD ["/usr/local/bin/docker-mirror"]
