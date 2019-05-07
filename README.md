@@ -26,7 +26,7 @@ It's possible to filter by docker tags, tag age and number of latest tags.
   - `export CGO_ENABLED=1`
 - clone this repository to `$HOME/src/github.com/seatgeek/docker-mirror`
 - change your working directory to `$HOME/go/src/github.com/seatgeek/docker-mirror`
-- run `dep ensure` to install dependencies
+- run `dep ensure -vendor-only` to install dependencies
 - run `go install` to build and install the `docker-mirror` binary into your `$HOME/go/bin/` directory
   - alternative: `go build` to build the binary and put it in the current working directory
 

@@ -12,11 +12,11 @@ $(BUILD_DIR):
 .PHONY: install
 install:
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-	dep ensure
+	dep ensure -vendor-only
 
 .PHONY: build
 build: install
-	dep ensure
+	dep ensure -vendor-only
 	go install
 
 .PHONY: fmt
