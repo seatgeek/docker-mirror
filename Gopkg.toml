@@ -45,3 +45,7 @@ required = ["github.com/docker/docker-credential-helpers/osxkeychain"]
 [[constraint]]
   name = "github.com/google/go-github"
   version = "15.0.0"
+
+[[constraint]]
+  name = "github.com/cenkalti/backoff"
+  version = "2.2.0"

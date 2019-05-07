@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -71,4 +72,10 @@ func (e *ecrManager) buildCache(nextToken *string) error {
 	}
 
 	return nil
+}
+
+func (e *ecrManager) buildCacheBackoff() backoff.Operation {
+	return func() error {
+		return e.buildCache(nil)
+	}
 }

@@ -59,6 +59,14 @@
   version = "v2.0.0-preview.3"
 
 [[projects]]
+  digest = "1:29fb1d9358f24856ab2a3747e2f3d97be41897b22b46bf20fbb984ba7be439af"
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2146c93394225c3732078705043ce9f26584d334"
+  version = "v2.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:fc8dbcc2a5de7c093e167828ebbdf551641761d2ad75431d3a167d467a264115"
   name = "github.com/containerd/continuity"
@@ -272,6 +280,7 @@
   input-imports = [
     "github.com/aws/aws-sdk-go-v2/aws/external",
     "github.com/aws/aws-sdk-go-v2/service/ecr",
+    "github.com/cenkalti/backoff",
     "github.com/docker/docker-credential-helpers/osxkeychain",
     "github.com/fsouza/go-dockerclient",
     "github.com/google/go-github/github",

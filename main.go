@@ -8,10 +8,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	"github.com/fsouza/go-dockerclient"
+	"github.com/cenkalti/backoff"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -110,7 +112,16 @@ func main() {
 
 	// pre-load ECR repositories
 	ecrManager := &ecrManager{client: ecr.New(cfg)}
-	if err := ecrManager.buildCache(nil); err != nil {
+
+	backoffSettings := backoff.NewExponentialBackOff()
+	backoffSettings.InitialInterval = 1 * time.Second
+	backoffSettings.MaxElapsedTime = 10 * time.Second
+
+	notifyError := func(err error, d time.Duration) {
+		log.Errorf("%v (%s)", err, d.String())
+	}
+
+	if err = backoff.RetryNotify(ecrManager.buildCacheBackoff(), backoffSettings, notifyError); err != nil {
 		log.Fatalf("Could not build ECR cache: %s", err)
 	}
 
