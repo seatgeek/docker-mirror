@@ -45,6 +45,7 @@ type Repository struct {
 	RemoteTagSource string            `yaml:"remote_tags_source"`
 	RemoteTagConfig map[string]string `yaml:"remote_tags_config"`
 	TargetPrefix    *string           `yaml:"target_prefix"`
+	SkipRemoteTags  bool              `yaml:"skip_remote_tags"`
 }
 
 func main() {
