@@ -40,7 +40,7 @@ required = ["github.com/docker/docker-credential-helpers/osxkeychain"]
 
 [[constraint]]
   name = "github.com/ryanuber/go-glob"
-  version = "0.1.0"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/google/go-github"
