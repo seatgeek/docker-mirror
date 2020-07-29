@@ -167,6 +167,7 @@ func (m *mirror) pullImage(tag string) error {
 
 	authConfig := docker.AuthConfiguration{}
 	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+		m.log.Info("Using docker hub credentials from environment")
 		authConfig.Username = os.Getenv("DOCKERHUB_USER")
 		authConfig.Password = os.Getenv("DOCKERHUB_PASSWORD")
 	}
