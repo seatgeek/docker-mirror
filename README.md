@@ -92,3 +92,5 @@ repositories:
 Environment Variable  |  Default       | Description
 ----------------------| ---------------| -------------------------------------------------
 CONFIG_FILE           | config.yaml    | config file to use
+DOCKERHUB_USER        | unset          | optional user to authenticate to docker hub with
+DOCKERHUB_PASSWORD    | unset          | optional password to authenticate to docker hub with
