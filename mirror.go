@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -164,7 +165,14 @@ func (m *mirror) pullImage(tag string) error {
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "pull")},
 	}
 
-	return m.dockerClient.PullImage(pullOptions, docker.AuthConfiguration{})
+	authConfig := docker.AuthConfiguration{}
+	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+		m.log.Info("Using docker hub credentials from environment")
+		authConfig.Username = os.Getenv("DOCKERHUB_USER")
+		authConfig.Password = os.Getenv("DOCKERHUB_PASSWORD")
+	}
+
+	return m.dockerClient.PullImage(pullOptions, authConfig)
 }
 
 // (re)tag the (local) docker image with the target repository name
