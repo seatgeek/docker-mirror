@@ -29,7 +29,7 @@
   revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
-  digest = "1:2c019d22bde3b27a99784efd0019945852ad19c2f7d1d3205bff317d39c345ee"
+  digest = "1:b07d80deab432699475b9c985c8023b2570f64c8fb05804ff538b5ca77421f1e"
   name = "github.com/aws/aws-sdk-go-v2"
   packages = [
     "aws",
@@ -43,6 +43,7 @@
     "aws/signer/v4",
     "aws/stscreds",
     "internal/awsutil",
+    "internal/ini",
     "internal/sdk",
     "private/protocol",
     "private/protocol/json/jsonutil",
@@ -55,8 +56,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "3383499f1024e86a3c68200f9bdc6759ee20eb70"
-  version = "v2.0.0-preview.3"
+  revision = "d52522b5f4b95591ff6528d7c54923951aadf099"
+  version = "v2.0.0-preview.5"
 
 [[projects]]
   digest = "1:29fb1d9358f24856ab2a3747e2f3d97be41897b22b46bf20fbb984ba7be439af"
@@ -142,14 +143,6 @@
   pruneopts = "UT"
   revision = "ca33ff277b527ce11b793e62f9ba244129b01caf"
   version = "v1.2.0"
-
-[[projects]]
-  digest = "1:db18b69d50d54aadb436b8639e2b55b5ece5f595a601d9eb461fabd998ebb288"
-  name = "github.com/go-ini/ini"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
-  version = "v1.33.0"
 
 [[projects]]
   digest = "1:9a688317f3231e0175b3429033f44411906c0ce119361b7b5019d01375f8cff7"
