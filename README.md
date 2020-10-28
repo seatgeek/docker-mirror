@@ -58,6 +58,7 @@ Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-log
 
 ```yml
 ---
+cleanup: true # (optional) Clean the mirrored images (default: false)
 target:
   # where to copy images to
   registry: ACCOUNT_ID.dkr.REGION.amazonaws.com

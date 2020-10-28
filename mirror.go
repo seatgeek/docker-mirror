@@ -210,6 +210,24 @@ func (m *mirror) pushImage(tag string) error {
 	return m.dockerClient.PushImage(pushOptions, *creds)
 }
 
+func (m *mirror) deleteImage(tag string) error {
+	repository := fmt.Sprintf("%s:%s", m.repo.Name, tag)
+	m.log.Info("Cleaning images: " + repository)
+	err := m.dockerClient.RemoveImage(repository)
+	if err != nil {
+		return err
+	}
+
+	target := fmt.Sprintf("%s/%s:%s", config.Target.Registry, m.targetRepositoryName(), tag)
+	m.log.Info("Cleaning images: " + target)
+	err = m.dockerClient.RemoveImage(target)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *mirror) work() {
 	m.log.Debugf("Starting work")
 
@@ -235,6 +253,13 @@ func (m *mirror) work() {
 		if err := m.pushImage(tag.Name); err != nil {
 			m.log.Errorf("Failed to push (re)tagged image: %s", err)
 			continue
+		}
+
+		if config.Cleanup == true {
+			if err := m.deleteImage(tag.Name); err != nil {
+				m.log.Errorf("Failed to clean image: %s", err)
+				continue
+			}
 		}
 
 		m.log.Info("Successfully pushed (re)tagged image")

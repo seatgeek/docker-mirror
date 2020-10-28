@@ -24,6 +24,7 @@ var (
 
 // Config is the result of the parsed yaml file
 type Config struct {
+	Cleanup      bool         `yaml:"cleanup"`
 	Workers      int          `yaml:"workers"`
 	Repositories []Repository `yaml:"repositories,flow"`
 	Target       TargetConfig `yaml:"target"`
