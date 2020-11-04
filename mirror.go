@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	httpClient = &http.Client{Timeout: 10 * time.Second}
+	httpClient = &http.Client{Timeout: 20 * time.Second}
 )
 
 // TagsResponse is Docker Registry v2 compatible struct
@@ -279,7 +279,22 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 
 	var allTags []RepositoryTag
 	for {
-		r, err := httpClient.Get(url)
+        var (
+            err      error
+            r *http.Response
+            retries  int = 5
+        )
+
+        for retries > 0 {
+                r, err = httpClient.Get(url)
+            if err != nil {
+                log.Warningf("Failed to get %s, retrying", url)
+                retries -= 1
+            } else {
+                break
+            }
+        }
+
 		if err != nil {
 			return nil, err
 		}
