@@ -32,7 +32,7 @@ It's possible to filter by docker tags, tag age and number of latest tags.
 
 ## Using
 
-Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin 093535234988.dkr.ecr.us-east-1.amazonaws.com`)
+Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin ACCOUNT_ID.dkr.REGION.amazonaws.com`)
 
 `docker-mirror` will automatically create the ECR repository on demand, so you do not need to login and do any UI operations in the AWS Console.
 
