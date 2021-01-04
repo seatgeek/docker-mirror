@@ -8,7 +8,6 @@ COPY . /go/src/github.com/seatgeek/docker-mirror/
 RUN dep ensure -vendor-only
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/docker-mirror  .
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+FROM 093535234988.dkr.ecr.us-east-1.amazonaws.com/docker-base:5.1.0
 COPY --from=0 /go/src/github.com/seatgeek/docker-mirror/build/docker-mirror /usr/local/bin/
 CMD ["docker-mirror"]
