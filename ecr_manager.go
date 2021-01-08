@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 )
 
 type ecrManager struct {
-	client       *ecr.ECR        // AWS ECR client
+	client       *ecr.Client     // AWS ECR client
 	repositories map[string]bool // list of repositories in ECR
 }
 
@@ -28,10 +29,9 @@ func (e *ecrManager) ensure(name string) error {
 }
 
 func (e *ecrManager) create(name string) error {
-	req := e.client.CreateRepositoryRequest(&ecr.CreateRepositoryInput{
+	_, err := e.client.CreateRepository(context.TODO(), &ecr.CreateRepositoryInput{
 		RepositoryName: &name,
 	})
-	_, err := req.Send()
 	if err != nil {
 		return err
 	}
@@ -45,10 +45,9 @@ func (e *ecrManager) buildCache(nextToken *string) error {
 		log.Info("Loading list of ECR repositories")
 	}
 
-	req := e.client.DescribeRepositoriesRequest(&ecr.DescribeRepositoriesInput{
+	resp, err := e.client.DescribeRepositories(context.TODO(), &ecr.DescribeRepositoriesInput{
 		NextToken: nextToken,
 	})
-	resp, err := req.Send()
 	if err != nil {
 		return err
 	}
