@@ -91,3 +91,5 @@ Environment Variable  |  Default       | Description
 CONFIG_FILE           | config.yaml    | config file to use
 DOCKERHUB_USER        | unset          | optional user to authenticate to docker hub with
 DOCKERHUB_PASSWORD    | unset          | optional password to authenticate to docker hub with
+LOG_LEVEL             | unset          | optional control the log level output
+PREFIX                | unset          | optional only mirror images that match the defined prefix
