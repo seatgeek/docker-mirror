@@ -10,7 +10,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/containerd/continuity v0.0.0-20180322171221-3e8f2ea4b190 // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20180323031653-57c504799d97+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.6.0
+	github.com/docker/docker-credential-helpers v0.6.3
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.2 // indirect
 	github.com/fsouza/go-dockerclient v1.2.0
