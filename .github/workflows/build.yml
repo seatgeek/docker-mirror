@@ -2,9 +2,7 @@
 name: build
 
 on:
-  push:
-   tags:
-     - '*'
+  push
 
 jobs:
   bump-formula:
