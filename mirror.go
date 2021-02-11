@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/go-github/github"
 	"github.com/ryanuber/go-glob"
 	log "github.com/sirupsen/logrus"
@@ -275,11 +276,46 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		fullRepoName = "library/" + m.repo.Name
 	}
 
+	var token string
+	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+		m.log.Info("Getting tags using docker hub credentials from environment")
+
+		message, err := json.Marshal(map[string]string{
+			"username": os.Getenv("DOCKERHUB_USER"),
+			"password": os.Getenv("DOCKERHUB_PASSWORD"),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := http.Post("https://hub.docker.com/v2/users/login/", "application/json", bytes.NewBuffer(message))
+		if err != nil {
+			return nil, err
+		}
+
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+		token = result["token"].(string)
+	}
+
 	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
-	r, err := httpClient.Get(url)
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	if token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+
+	}
+	r, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer r.Body.Close()
 
 	var tags TagsResponse
