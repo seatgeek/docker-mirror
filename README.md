@@ -18,21 +18,18 @@ It's possible to filter by docker tags, tag age and number of latest tags.
 
 ## Install / Building
 
-- make sure you got Go 1.10 or newer
+- make sure you got Go 1.13 or newer
   - OSX: `brew install go`
-- make sure you got [`godep`](https://github.com/golang/dep) installed
-  - OSX: `brew install dep`
 - make sure you have `CGO` enabled
   - `export CGO_ENABLED=1`
 - clone this repository to `$HOME/src/github.com/seatgeek/docker-mirror`
 - change your working directory to `$HOME/go/src/github.com/seatgeek/docker-mirror`
-- run `dep ensure -vendor-only` to install dependencies
 - run `go install` to build and install the `docker-mirror` binary into your `$HOME/go/bin/` directory
   - alternative: `go build` to build the binary and put it in the current working directory
 
 ## Using
 
-Make sure that your local Docker agent is logged into to `ECR` (`eval $(aws ecr get-login --no-include-email --region us-east-1)`)
+Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin ACCOUNT_ID.dkr.REGION.amazonaws.com`)
 
 `docker-mirror` will automatically create the ECR repository on demand, so you do not need to login and do any UI operations in the AWS Console.
 
