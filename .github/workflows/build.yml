@@ -5,8 +5,8 @@ on:
   push
 
 jobs:
-  bump-formula:
-    runs-on: [macos-latest, ubuntu-20.04]
+  build:
+    runs-on: ubuntu-20.04
     env:
       GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
