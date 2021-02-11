@@ -18,7 +18,7 @@ It's possible to filter by docker tags, tag age and number of latest tags.
 
 ## Install / Building
 
-- make sure you got Go 1.13 or newer
+- make sure you got Go 1.15 or newer
   - OSX: `brew install go`
 - make sure you have `CGO` enabled
   - `export CGO_ENABLED=1`
