@@ -325,8 +325,6 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		token = result["token"].(string)
 	}
 
-
-
 	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
 
 	req, err := http.NewRequest("GET", url, nil)
