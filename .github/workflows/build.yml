@@ -16,5 +16,5 @@ jobs:
         go-version: 1.15
     - name: Build
       run: make -j dist
-    - name: List output	
+    - name: List output
       run: ls -la build
