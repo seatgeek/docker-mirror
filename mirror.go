@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -210,6 +211,24 @@ func (m *mirror) pushImage(tag string) error {
 	return m.dockerClient.PushImage(pushOptions, *creds)
 }
 
+func (m *mirror) deleteImage(tag string) error {
+	repository := fmt.Sprintf("%s:%s", m.repo.Name, tag)
+	m.log.Info("Cleaning images: " + repository)
+	err := m.dockerClient.RemoveImage(repository)
+	if err != nil {
+		return err
+	}
+
+	target := fmt.Sprintf("%s/%s:%s", config.Target.Registry, m.targetRepositoryName(), tag)
+	m.log.Info("Cleaning images: " + target)
+	err = m.dockerClient.RemoveImage(target)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *mirror) work() {
 	m.log.Debugf("Starting work")
 
@@ -235,6 +254,13 @@ func (m *mirror) work() {
 		if err := m.pushImage(tag.Name); err != nil {
 			m.log.Errorf("Failed to push (re)tagged image: %s", err)
 			continue
+		}
+
+		if config.Cleanup == true {
+			if err := m.deleteImage(tag.Name); err != nil {
+				m.log.Errorf("Failed to clean image: %s", err)
+				continue
+			}
 		}
 
 		m.log.Info("Successfully pushed (re)tagged image")
@@ -275,14 +301,50 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		fullRepoName = "library/" + m.repo.Name
 	}
 
-	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
+	var token string
+	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+		m.log.Info("Getting tags using docker hub credentials from environment")
 
-	var allTags []RepositoryTag
-	for {
-		r, err := httpClient.Get(url)
+		message, err := json.Marshal(map[string]string{
+			"username": os.Getenv("DOCKERHUB_USER"),
+			"password": os.Getenv("DOCKERHUB_PASSWORD"),
+		})
+
 		if err != nil {
 			return nil, err
 		}
+
+		resp, err := http.Post("https://hub.docker.com/v2/users/login/", "application/json", bytes.NewBuffer(message))
+		if err != nil {
+			return nil, err
+		}
+
+		var result map[string]interface{}
+
+		json.NewDecoder(resp.Body).Decode(&result)
+		token = result["token"].(string)
+	}
+
+
+
+	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+	}
+
+	var allTags []RepositoryTag
+	for {
+		r, err := httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
 		defer r.Body.Close()
 
 		var tags TagsResponse
