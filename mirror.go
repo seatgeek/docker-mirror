@@ -327,17 +327,17 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 
 	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
-	}
-
 	var allTags []RepositoryTag
 	for {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if token != "" {
+			req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+		}
+
 		r, err := httpClient.Do(req)
 		if err != nil {
 			return nil, err
