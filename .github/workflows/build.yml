@@ -16,5 +16,7 @@ jobs:
         go-version: 1.15
     - name: Build
       run: make -j dist
+    - name: Test
+      run: go test -timeout=600s -v
     - name: List output
       run: ls -la build
