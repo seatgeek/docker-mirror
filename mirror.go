@@ -357,6 +357,7 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 				sleepTime := getSleepTime(res.Header.Get("X-RateLimit-Reset"), time.Now())
 				m.log.Infof("Rate limited on %s, sleeping for %s", url, sleepTime)
 				time.Sleep(sleepTime)
+				retries--
 			} else if res.StatusCode < 200 || res.StatusCode >= 300 {
 				m.log.Warningf("Get %s failed with %d, retrying", url, res.StatusCode)
 				retries--
