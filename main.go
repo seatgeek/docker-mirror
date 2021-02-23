@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/cenkalti/backoff"
 	docker "github.com/fsouza/go-dockerclient"
@@ -106,13 +107,13 @@ func main() {
 
 	// init AWS client
 	log.Info("Creating AWS client")
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatalf("Unable to load AWS SDK config, " + err.Error())
 	}
 
 	// pre-load ECR repositories
-	ecrManager := &ecrManager{client: ecr.New(cfg)}
+	ecrManager := &ecrManager{client: ecr.NewFromConfig(cfg)}
 
 	backoffSettings := backoff.NewExponentialBackOff()
 	backoffSettings.InitialInterval = 1 * time.Second
