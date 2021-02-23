@@ -406,5 +406,11 @@ func getSleepTime(rateLimitReset string, now time.Time) time.Duration {
 	}
 
 	sleepTime := time.Unix(rateLimitResetInt, 0)
-	return sleepTime.Sub(now)
+	calculatedSleepTime := sleepTime.Sub(now)
+
+	if calculatedSleepTime < (0 * time.Second) {
+		return 0 * time.Second
+	}
+
+	return calculatedSleepTime
 }
