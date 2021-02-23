@@ -56,6 +56,8 @@ type mirror struct {
 	remoteTags   []RepositoryTag // list of remote repository tags (post filtering)
 }
 
+const defaultSleepDuration time.Duration = 60 * time.Second
+
 func (m *mirror) setup(repo Repository) (err error) {
 	m.log = log.WithField("full_repo", repo.Name)
 	m.repo = repo
@@ -329,24 +331,49 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 
 	var allTags []RepositoryTag
 	for {
-		req, err := http.NewRequest("GET", url, nil)
+		var (
+			err     error
+			res     *http.Response
+			req     *http.Request
+			retries int = 5
+		)
+
+		for retries > 0 {
+			req, err = http.NewRequest("GET", url, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			if token != "" {
+				req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+			}
+
+			res, err = httpClient.Do(req)
+
+			if err != nil {
+				m.log.Warningf("Failed to get %s, retrying", url)
+				retries--
+			} else if res.StatusCode == 429 {
+				sleepTime := getSleepTime(res.Header.Get("X-RateLimit-Reset"), time.Now())
+				m.log.Infof("Rate limited on %s, sleeping for %s", url, sleepTime)
+				time.Sleep(sleepTime)
+				retries--
+			} else if res.StatusCode < 200 || res.StatusCode >= 300 {
+				m.log.Warningf("Get %s failed with %d, retrying", url, res.StatusCode)
+				retries--
+			} else {
+				break
+			}
+
+		}
+
 		if err != nil {
 			return nil, err
 		}
-
-		if token != "" {
-			req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
-		}
-
-		r, err := httpClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		defer r.Body.Close()
+		defer res.Body.Close()
 
 		var tags TagsResponse
-		if err := json.NewDecoder(r.Body).Decode(&tags); err != nil {
+		if err := json.NewDecoder(res.Body).Decode(&tags); err != nil {
 			return nil, err
 		}
 
@@ -370,4 +397,21 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 func (m *mirror) timeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
 	m.log.Infof("%s in %s", name, elapsed)
+}
+
+func getSleepTime(rateLimitReset string, now time.Time) time.Duration {
+	rateLimitResetInt, err := strconv.ParseInt(rateLimitReset, 10, 64)
+
+	if err != nil {
+		return defaultSleepDuration
+	}
+
+	sleepTime := time.Unix(rateLimitResetInt, 0)
+	calculatedSleepTime := sleepTime.Sub(now)
+
+	if calculatedSleepTime < (0 * time.Second) {
+		return 0 * time.Second
+	}
+
+	return calculatedSleepTime
 }
