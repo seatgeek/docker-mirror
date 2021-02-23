@@ -334,26 +334,36 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 
 	if token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
-
-	}
-	r, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
 	}
 
-	defer r.Body.Close()
+	var allTags []RepositoryTag
+	for {
+		r, err := httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
 
-	var tags TagsResponse
-	if err := json.NewDecoder(r.Body).Decode(&tags); err != nil {
-		return nil, err
+		defer r.Body.Close()
+
+		var tags TagsResponse
+		if err := json.NewDecoder(r.Body).Decode(&tags); err != nil {
+			return nil, err
+		}
+
+		allTags = append(allTags, tags.Results...)
+		if tags.Next == nil {
+			break
+		}
+
+		url = *tags.Next
 	}
 
 	// sort the tags by updated time, newest first
-	sort.Slice(tags.Results, func(i, j int) bool {
-		return tags.Results[i].LastUpdated.After(tags.Results[j].LastUpdated)
+	sort.Slice(allTags, func(i, j int) bool {
+		return allTags[i].LastUpdated.After(allTags[j].LastUpdated)
 	})
 
-	return tags.Results, nil
+	return allTags, nil
 }
 
 // will help output how long time a function took to do its work
