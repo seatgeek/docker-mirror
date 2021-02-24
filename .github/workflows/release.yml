@@ -1,9 +1,11 @@
-name: build
+name: release
 
-on: [push, pull_request]
+on:
+  release:
+    types: [published]
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-20.04
     steps:
     - name: Setup go
@@ -16,5 +18,9 @@ jobs:
       run: make -j dist
     - name: Test
       run: go test -timeout=600s -v
-    - name: List output
-      run: ls -la build
+    - name: Upload release assets
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/docker-mirror-linux-amd64
+        tag: ${{ github.ref }}

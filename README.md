@@ -1,5 +1,7 @@
 # docker-mirror
 
+[![build](https://github.com/seatgeek/docker-mirror/actions/workflows/build.yml/badge.svg)](https://github.com/seatgeek/docker-mirror/actions/workflows/build.yml)
+
 This project will copy public DockerHub repositories to a private registry.
 
 It's possible to filter by docker tags, tag age and number of latest tags.
@@ -7,12 +9,13 @@ It's possible to filter by docker tags, tag age and number of latest tags.
 <!-- TOC -->
 
 - [docker-mirror](#docker-mirror)
-    - [Install / Building](#install-building)
-    - [Using](#using)
-        - [Adding new mirror repository](#adding-new-mirror-repository)
-        - [Updating / resync an existing repository](#updating-resync-an-existing-repository)
-        - [Update all repositories](#update-all-repositories)
-    - [Example config.yaml](#example-configyaml)
+  - [Install / Building](#install--building)
+  - [Using](#using)
+    - [Adding new mirror repository](#adding-new-mirror-repository)
+    - [Updating / resync an existing repository](#updating--resync-an-existing-repository)
+    - [Update all repositories](#update-all-repositories)
+  - [Example config.yaml](#example-configyaml)
+  - [Environment Variables](#environment-variables)
 
 <!-- /TOC -->
 
