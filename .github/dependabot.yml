@@ -1,0 +1,29 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "10:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: github.com/aws/aws-sdk-go-v2/config
+    versions:
+    - 1.1.2
+    - 1.1.3
+    - 1.1.4
+    - 1.1.5
+  - dependency-name: github.com/aws/aws-sdk-go-v2/service/ecr
+    versions:
+    - 1.1.2
+    - 1.2.0
+    - 1.2.1
+  - dependency-name: github.com/fsouza/go-dockerclient
+    versions:
+    - 1.7.0
+    - 1.7.1
+  - dependency-name: github.com/sirupsen/logrus
+    versions:
+    - 1.7.0
+    - 1.7.1
+    - 1.8.0
