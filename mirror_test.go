@@ -56,7 +56,7 @@ type TestDockerClient struct {
 }
 
 func (t *TestDockerClient) Info() (*docker.DockerInfo, error) {
-	return *docker.DockerInfo{}, nil
+	return &docker.DockerInfo{}, nil
 }
 
 func (t *TestDockerClient) TagImage(name string, opts docker.TagImageOptions) error {
