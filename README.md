@@ -4,7 +4,7 @@
 
 This project will copy public DockerHub repositories to a private registry.
 
-It's possible to filter by docker tags, tag age and number of latest tags.
+It's possible to filter by docker tags, tag age and number of latest tags, it is also possible to use a private docker registry.
 
 <!-- TOC -->
 

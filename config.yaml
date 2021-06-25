@@ -4,7 +4,8 @@ target:
   prefix: "hub/"
 
 repositories:
-  - name: elasticsearch
+  - private_registry: "private-registry/",
+    name: elasticsearch
     max_tag_age: 4w
     ignore_tag:
       - "*-alpine"
