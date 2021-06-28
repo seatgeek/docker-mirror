@@ -166,7 +166,7 @@ func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm
 		select {
 		case repo := <-workerCh:
 			m := mirror{
-				dockerClient: dc,
+				dockerClient: *dc,
 				ecrManager:   ecrm,
 			}
 			if err := m.setup(repo); err != nil {

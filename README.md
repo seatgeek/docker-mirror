@@ -4,7 +4,7 @@
 
 This project will copy public DockerHub repositories to a private registry.
 
-It's possible to filter by docker tags, tag age and number of latest tags, it is also possible to use a private docker registry.
+It's possible to filter by docker tags, tag age and number of latest tags, it is also possible to use a private docker registry. To use a private docker registry, add a line to your `config.yaml` file such as `private_registry: "private-registry-name"` and replace `private-registry-name` with the name of your private registry. This will prefix your docker pulls with the private registry name.
 
 <!-- TOC -->
 

@@ -87,26 +87,53 @@ func CreateTestDockerClient(responseContainer *ResponseContainer) *TestDockerCli
 }
 
 func TestPullImage(t *testing.T) {
-	responseContainer := &ResponseContainer{}
-	var client DockerClient
-	client = CreateTestDockerClient(responseContainer)
-	repo := Repository{
-		PrivateRegistry: "private-registry/",
-		Name:            "elasticsearch",
-	}
 
-	m := mirror{
-		dockerClient: &client,
-	}
-	m.setup(repo)
-	m.pullImage("latest")
+	t.Run("tests to ensure that PrivateRegistry creates the proper repo name", func(t *testing.T) {
+		responseContainer := &ResponseContainer{}
+		var client DockerClient
+		client = CreateTestDockerClient(responseContainer)
+		repo := Repository{
+			PrivateRegistry: "private-registry-name",
+			Name:            "elasticsearch",
+		}
 
-	got := responseContainer.PullImageOptions.Repository
-	want := "private-registry/elasticsearch"
+		m := mirror{
+			dockerClient: client,
+		}
 
-	if got != want {
-		t.Errorf("Expected %q, got %q", want, got)
-	}
+		m.setup(repo)
+		m.pullImage("latest")
+
+		got := responseContainer.PullImageOptions.Repository
+		want := "private-registry-name/elasticsearch"
+
+		if got != want {
+			t.Errorf("Expected %q, got %q", want, got)
+		}
+	})
+
+	t.Run("tests to ensure that without PrivateRegistry, a repo name is correct", func(t *testing.T) {
+		responseContainer := &ResponseContainer{}
+		var client DockerClient
+		client = CreateTestDockerClient(responseContainer)
+		repo := Repository{
+			Name: "elasticsearch",
+		}
+
+		m := mirror{
+			dockerClient: client,
+		}
+
+		m.setup(repo)
+		m.pullImage("latest")
+
+		got := responseContainer.PullImageOptions.Repository
+		want := "elasticsearch"
+
+		if got != want {
+			t.Errorf("Expected %q, got %q", want, got)
+		}
+	})
 }
 
 func getTimeAsString(date time.Time) string {
