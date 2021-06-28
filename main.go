@@ -39,6 +39,7 @@ type TargetConfig struct {
 
 // Repository is a single docker hub repository to mirror
 type Repository struct {
+	PrivateRegistry string            `yaml:"private_registry"`
 	Name            string            `yaml:"name"`
 	MatchTags       []string          `yaml:"match_tag"`
 	DropTags        []string          `yaml:"ignore_tag"`
@@ -47,6 +48,11 @@ type Repository struct {
 	RemoteTagSource string            `yaml:"remote_tags_source"`
 	RemoteTagConfig map[string]string `yaml:"remote_tags_config"`
 	TargetPrefix    *string           `yaml:"target_prefix"`
+}
+
+func createDockerClient() (*docker.Client, error) {
+	client, err := docker.NewClientFromEnv()
+	return client, err
 }
 
 func main() {
@@ -94,7 +100,8 @@ func main() {
 
 	// init Docker client
 	log.Info("Creating Docker client")
-	client, err := docker.NewClientFromEnv()
+	var client DockerClient
+	client, err = createDockerClient()
 	if err != nil {
 		log.Fatalf("Could not create Docker client: %s", err.Error())
 	}
@@ -132,7 +139,7 @@ func main() {
 
 	// start background workers
 	for i := 0; i < config.Workers; i++ {
-		go worker(&wg, workerCh, client, ecrManager)
+		go worker(&wg, workerCh, &client, ecrManager)
 	}
 
 	prefix := os.Getenv("PREFIX")
@@ -152,7 +159,7 @@ func main() {
 	log.Info("Done")
 }
 
-func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *docker.Client, ecrm *ecrManager) {
+func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm *ecrManager) {
 	log.Debug("Starting worker")
 
 	for {

@@ -4,8 +4,6 @@
 
 This project will copy public DockerHub repositories to a private registry.
 
-It's possible to filter by docker tags, tag age and number of latest tags.
-
 <!-- TOC -->
 
 - [docker-mirror](#docker-mirror)
@@ -37,6 +35,20 @@ Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-log
 `docker-mirror` will automatically create the ECR repository on demand, so you do not need to login and do any UI operations in the AWS Console.
 
 `docker-mirror` will look for your AWS credentials in all the default locations (`env`, `~/.aws/` and so forth like normal AWS tools do)
+
+### Configuration File
+
+There are several configuration options you can use in your `config.yaml` below. Please see the `config.yaml` file in the repository for a full example.
+
+- `ignore_tag:` This option sets tags that can be ignored on pulls. (i.e. `ignore_tag: - "*-alpine"`)
+
+- `match_tag:` This option sets the tags that you want to match on for pulls. (i.e. `match_tag: - "3*"`)
+
+- `max_tag_age:` This option sets the max tag age you wish to pull from. (i.e. `max_tag_age: 4w`)
+
+- `name:` This option sets the name of your repository. (i.e. `name: elasticsearch`)
+
+- `private_registry:` This option allows you to set a private Docker registry prefix for docker pulls. It will prefix any of your `name:` options with the `private_registry` name and a slash to allow you to customize where your images are being pulled through. This is particularly useful if you use a proxy to dockerhub. i.e. (`private_registry: "private-registry-name"`)
 
 ### Adding new mirror repository
 

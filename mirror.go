@@ -48,8 +48,16 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+type DockerClient interface {
+	Info() (*docker.DockerInfo, error)
+	TagImage(string, docker.TagImageOptions) error
+	PullImage(docker.PullImageOptions, docker.AuthConfiguration) error
+	PushImage(docker.PushImageOptions, docker.AuthConfiguration) error
+	RemoveImage(string) error
+}
+
 type mirror struct {
-	dockerClient *docker.Client  // docker client used to pull, tag and push images
+	dockerClient *DockerClient   // docker client used to pull, tag and push images
 	ecrManager   *ecrManager     // ECR manager, used to ensure the ECR repository exist
 	log          *log.Entry      // logrus logger with the relevant custom fields
 	repo         Repository      // repository the mirror
@@ -61,7 +69,6 @@ const defaultSleepDuration time.Duration = 60 * time.Second
 func (m *mirror) setup(repo Repository) (err error) {
 	m.log = log.WithField("full_repo", repo.Name)
 	m.repo = repo
-
 	// specific tag to mirror
 	if strings.Contains(repo.Name, ":") {
 		chunk := strings.SplitN(repo.Name, ":", 2)
@@ -175,7 +182,12 @@ func (m *mirror) pullImage(tag string) error {
 		authConfig.Password = os.Getenv("DOCKERHUB_PASSWORD")
 	}
 
-	return m.dockerClient.PullImage(pullOptions, authConfig)
+	if m.repo.PrivateRegistry != "" {
+		pullOptions.Repository = m.repo.PrivateRegistry + "/" + m.repo.Name
+		return (*m.dockerClient).PullImage(pullOptions, authConfig)
+	}
+
+	return (*m.dockerClient).PullImage(pullOptions, authConfig)
 }
 
 // (re)tag the (local) docker image with the target repository name
@@ -189,7 +201,7 @@ func (m *mirror) tagImage(tag string) error {
 		Force: true,
 	}
 
-	return m.dockerClient.TagImage(fmt.Sprintf("%s:%s", m.repo.Name, tag), tagOptions)
+	return (*m.dockerClient).TagImage(fmt.Sprintf("%s:%s", m.repo.Name, tag), tagOptions)
 }
 
 // push the local (re)tagged image to the target docker registry
@@ -210,20 +222,20 @@ func (m *mirror) pushImage(tag string) error {
 		return err
 	}
 
-	return m.dockerClient.PushImage(pushOptions, *creds)
+	return (*m.dockerClient).PushImage(pushOptions, *creds)
 }
 
 func (m *mirror) deleteImage(tag string) error {
 	repository := fmt.Sprintf("%s:%s", m.repo.Name, tag)
 	m.log.Info("Cleaning images: " + repository)
-	err := m.dockerClient.RemoveImage(repository)
+	err := (*m.dockerClient).RemoveImage(repository)
 	if err != nil {
 		return err
 	}
 
 	target := fmt.Sprintf("%s/%s:%s", config.Target.Registry, m.targetRepositoryName(), tag)
 	m.log.Info("Cleaning images: " + target)
-	err = m.dockerClient.RemoveImage(target)
+	err = (*m.dockerClient).RemoveImage(target)
 	if err != nil {
 		return err
 	}
