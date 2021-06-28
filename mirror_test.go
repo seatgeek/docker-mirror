@@ -98,7 +98,7 @@ func TestPullImage(t *testing.T) {
 		}
 
 		m := mirror{
-			dockerClient: client,
+			dockerClient: &client,
 		}
 
 		m.setup(repo)
@@ -121,7 +121,7 @@ func TestPullImage(t *testing.T) {
 		}
 
 		m := mirror{
-			dockerClient: client,
+			dockerClient: &client,
 		}
 
 		m.setup(repo)

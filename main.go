@@ -139,7 +139,7 @@ func main() {
 
 	// start background workers
 	for i := 0; i < config.Workers; i++ {
-		go worker(&wg, workerCh, client, ecrManager)
+		go worker(&wg, workerCh, &client, ecrManager)
 	}
 
 	prefix := os.Getenv("PREFIX")
@@ -159,7 +159,7 @@ func main() {
 	log.Info("Done")
 }
 
-func worker(wg *sync.WaitGroup, workerCh chan Repository, dc DockerClient, ecrm *ecrManager) {
+func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm *ecrManager) {
 	log.Debug("Starting worker")
 
 	for {
