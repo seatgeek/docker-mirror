@@ -19,16 +19,14 @@ require (
 	github.com/google/go-github v15.0.0+incompatible
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
-	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/opencontainers/selinux v1.6.0 // indirect
 	github.com/ryanuber/go-glob v0.0.0-20160226084822-572520ed46db
-	github.com/sirupsen/logrus v1.0.5
+	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1 // indirect
-	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
-	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
+	golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible // indirect
 )
