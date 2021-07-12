@@ -77,12 +77,24 @@ func (m *mirror) setup(repo Repository) (err error) {
 	}
 
 	// fetch remote tags
-	m.remoteTags, err = m.getRemoteTags()
+
+	if !m.repo.SkipRemoteTags {
+		m.remoteTags, err = m.getRemoteTags()
+	}
 	if err != nil {
 		return err
 	}
 
-	m.filterTags()
+	if !m.repo.SkipRemoteTags {
+		m.filterTags()
+	} else {
+		for _, tag := range m.repo.MatchTags {
+			repositoryTag := RepositoryTag{
+				Name: tag,
+			}
+			m.remoteTags = append(m.remoteTags, repositoryTag)
+		}
+	}
 
 	m.log = m.log.WithField("repo", m.repo.Name)
 	m.log = m.log.WithField("num_tags", len(m.remoteTags))

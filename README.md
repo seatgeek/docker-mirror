@@ -98,6 +98,11 @@ repositories:
       - "v*"
 
   - name: jippi/go-metadataproxy # import all tags
+
+  - name: docker.elastic.co/kibana/kibana-oss # The image is not hosted on Docker Hub
+    match_tag:
+      - "6.4.3"
+    skip_remote_tags: true # Do not fetch the tags from the registry, use the content of match_tag as existing tags
 ```
 
 ## Environment Variables

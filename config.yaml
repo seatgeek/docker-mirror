@@ -30,3 +30,7 @@ repositories:
     match_tag:
       - "v*"
 
+  - name: docker.elastic.co/kibana/kibana-oss
+    match_tag:
+      - "6.4.3"
+    skip_remote_tags: true
