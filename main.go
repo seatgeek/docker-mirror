@@ -20,7 +20,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ecrPublicRegistryPrefix = "public.ecr.aws"
+const (
+	ecrPublicRegistryPrefix = "public.ecr.aws"
+	ecrPublicRegion = "us-east-1"
+)
 
 var (
 	config       Config
@@ -138,8 +141,8 @@ func main() {
 	var ecrManager ecrManager
 
 	if !isPrivateECR {
-		// ECR public registries are only on us-east-1 region.
-		cfg.Region = "us-east-1"
+		// Override the AWS region with the ecrPublicRegion for ECR authentication.
+		cfg.Region = ecrPublicRegion
 		ecrManager = &ecrPublicManager{client: ecrpublic.NewFromConfig(cfg)}
 	} else {
 		ecrManager = &ecrPrivateManager{client: ecr.NewFromConfig(cfg)}

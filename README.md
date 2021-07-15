@@ -35,7 +35,9 @@ Make sure that your local Docker agent is logged into to `ECR`.
 `aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin ACCOUNT_ID.dkr.REGION.amazonaws.com`
 - To login to ECR public registries: \
 `aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/YOUR_ECR_PUBLIC_SUFFIX` \
-  Note that the region must be `us-east-1` for ECR public registries.
+  Note that the region must be `us-east-1` for ECR public registry authentication.
+  
+_See [AWS ECR documentation](https://docs.aws.amazon.com/ecr/index.html) for more details_
 
 `docker-mirror` will automatically create the ECR repository on demand, so you do not need to login and do any UI operations in the AWS Console.
 
