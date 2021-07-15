@@ -79,7 +79,7 @@ cleanup: true # (optional) Clean the mirrored images (default: false)
 target:
   # where to copy images to
   # Below is an example of the ECR private registry.
-  # To mirror repositories to a ECR public registry, set this value to public.ecr.aws/YOUR_ECR_PUBLIC_SUFFIX
+  # To mirror repositories to a ECR public registry, replace this value with public.ecr.aws/YOUR_ECR_PUBLIC_ALIAS
   registry: ACCOUNT_ID.dkr.REGION.amazonaws.com
 
   # (optional) prefix all repositories with this name
