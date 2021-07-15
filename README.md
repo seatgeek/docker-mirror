@@ -30,7 +30,12 @@ This project will copy public DockerHub repositories to a private registry.
 
 ## Using
 
-Make sure that your local Docker agent is logged into to `ECR` (`aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin ACCOUNT_ID.dkr.REGION.amazonaws.com`)
+Make sure that your local Docker agent is logged into to `ECR`.
+- To login to ECR private registries: \
+`aws ecr get-login-password --region us-east-1 | docker login -u AWS --password-stdin ACCOUNT_ID.dkr.REGION.amazonaws.com`
+- To login to ECR public registries: \
+`aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/YOUR_ECR_PUBLIC_SUFFIX` \
+  Note that the region must be `us-east-1` for ECR public registries.
 
 `docker-mirror` will automatically create the ECR repository on demand, so you do not need to login and do any UI operations in the AWS Console.
 
@@ -73,6 +78,8 @@ There are several configuration options you can use in your `config.yaml` below.
 cleanup: true # (optional) Clean the mirrored images (default: false)
 target:
   # where to copy images to
+  # Below is an example of the ECR private registry.
+  # To mirror repositories to a ECR public registry, set this value to public.ecr.aws/YOUR_ECR_PUBLIC_SUFFIX
   registry: ACCOUNT_ID.dkr.REGION.amazonaws.com
 
   # (optional) prefix all repositories with this name
