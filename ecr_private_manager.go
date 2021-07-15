@@ -8,12 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ecrManager struct {
+type ecrPrivateManager struct {
 	client       *ecr.Client     // AWS ECR client
 	repositories map[string]bool // list of repositories in ECR
 }
 
-func (e *ecrManager) exists(name string) bool {
+func (e *ecrPrivateManager) exists(name string) bool {
 	if _, ok := e.repositories[name]; ok {
 		return true
 	}
@@ -21,7 +21,7 @@ func (e *ecrManager) exists(name string) bool {
 	return false
 }
 
-func (e *ecrManager) ensure(name string) error {
+func (e *ecrPrivateManager) ensure(name string) error {
 	if e.exists(name) {
 		return nil
 	}
@@ -29,7 +29,7 @@ func (e *ecrManager) ensure(name string) error {
 	return e.create(name)
 }
 
-func (e *ecrManager) create(name string) error {
+func (e *ecrPrivateManager) create(name string) error {
 	_, err := e.client.CreateRepository(context.TODO(), &ecr.CreateRepositoryInput{
 		RepositoryName: &name,
 	})
@@ -42,7 +42,7 @@ func (e *ecrManager) create(name string) error {
 	return nil
 }
 
-func (e *ecrManager) buildCache(nextToken *string) error {
+func (e *ecrPrivateManager) buildCache(nextToken *string) error {
 	if nextToken == nil {
 		log.Info("Loading list of ECR repositories")
 	}
@@ -75,7 +75,7 @@ func (e *ecrManager) buildCache(nextToken *string) error {
 	return nil
 }
 
-func (e *ecrManager) buildCacheBackoff() backoff.Operation {
+func (e *ecrPrivateManager) buildCacheBackoff() backoff.Operation {
 	return func() error {
 		return e.buildCache(nil)
 	}
