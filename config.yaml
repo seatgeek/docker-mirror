@@ -1,11 +1,15 @@
 ---
-cleanup: true
-
 target:
-  registry: 847030493009.dkr.ecr.us-east-2.amazonaws.com
+  registry: ACCOUNT_ID.dkr.REGION.amazonaws.com
   prefix: "hub/"
 
 repositories:
+  - private_registry: "private-registry-name",
+    name: elasticsearch
+    max_tag_age: 4w
+    ignore_tag:
+      - "*-alpine"
+
   - name: redis
     max_tag_age: 4w
     match_tag:
@@ -17,6 +21,14 @@ repositories:
       - "*alpine*"
       - "*nanoserver*"
       - "*windowsservercore*"
+
+  - name: yotpo/resec
+    max_tag_age: 4w
+
+  - name: jippi/hashi-ui
+    max_tag_age: 4w
+    match_tag:
+      - "v*"
 
   - name: kubebuilder/kube-rbac-proxy
     host: gcr.io
