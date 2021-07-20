@@ -30,16 +30,16 @@ var (
 
 // DockerTagsResponse is Docker Registry v2 compatible struct
 type DockerTagsResponse struct {
-	Count    int                   `json:"count"`
-	Next     *string               `json:"next"`
-	Previous *string               `json:"previous"`
+	Count    int             `json:"count"`
+	Next     *string         `json:"next"`
+	Previous *string         `json:"previous"`
 	Results  []RepositoryTag `json:"results"`
 }
 
 // QuayTagsResponse is Quay API v1 compatible struct
 type QuayTagsResponse struct {
-	HasAdditional bool                `json:"has_additional"`
-	Page          int                 `json:"page"`
+	HasAdditional bool            `json:"has_additional"`
+	Page          int             `json:"page"`
 	Tags          []RepositoryTag `json:"tags"`
 }
 
@@ -406,7 +406,7 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 
 	var allTags []RepositoryTag
 
-	search:
+search:
 	for {
 		var (
 			err     error
