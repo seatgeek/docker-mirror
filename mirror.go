@@ -58,7 +58,7 @@ type DockerClient interface {
 
 type mirror struct {
 	dockerClient *DockerClient   // docker client used to pull, tag and push images
-	ecrManager   *ecrManager     // ECR manager, used to ensure the ECR repository exist
+	ecrManager   ecrManager      // ECR manager, used to ensure the ECR repository exist
 	log          *log.Entry      // logrus logger with the relevant custom fields
 	repo         Repository      // repository the mirror
 	remoteTags   []RepositoryTag // list of remote repository tags (post filtering)
@@ -217,7 +217,16 @@ func (m *mirror) pushImage(tag string) error {
 		InactivityTimeout: 1 * time.Minute,
 	}
 
-	creds, err := getDockerCredentials(pushOptions.Registry)
+	var (
+		creds *docker.AuthConfiguration
+		err   error
+	)
+
+	if !isPrivateECR {
+		creds, err = getDockerCredentials(ecrPublicRegistryPrefix)
+	} else {
+		creds, err = getDockerCredentials(config.Target.Registry)
+	}
 	if err != nil {
 		return err
 	}

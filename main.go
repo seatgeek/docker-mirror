@@ -13,15 +13,31 @@ import (
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
 	"github.com/cenkalti/backoff"
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-var (
-	config Config
+const (
+	ecrPublicRegistryPrefix = "public.ecr.aws"
+	ecrPublicRegion         = "us-east-1"
 )
+
+var (
+	config       Config
+	isPrivateECR bool
+)
+
+// ecrManager is an interface which defines the methods ECR private or public managers should implement.
+type ecrManager interface {
+	exists(name string) bool
+	ensure(name string) error
+	create(name string) error
+	buildCache(nextToken *string) error
+	buildCacheBackoff() backoff.Operation
+}
 
 // Config is the result of the parsed yaml file
 type Config struct {
@@ -84,6 +100,8 @@ func main() {
 		log.Fatal("Missing `target -> registry` yaml config")
 	}
 
+	isPrivateECR = !strings.HasPrefix(config.Target.Registry, ecrPublicRegistryPrefix)
+
 	if config.Workers == 0 {
 		config.Workers = runtime.NumCPU()
 	}
@@ -120,7 +138,15 @@ func main() {
 	}
 
 	// pre-load ECR repositories
-	ecrManager := &ecrManager{client: ecr.NewFromConfig(cfg)}
+	var ecrManager ecrManager
+
+	if !isPrivateECR {
+		// Override the AWS region with the ecrPublicRegion for ECR authentication.
+		cfg.Region = ecrPublicRegion
+		ecrManager = &ecrPublicManager{client: ecrpublic.NewFromConfig(cfg)}
+	} else {
+		ecrManager = &ecrPrivateManager{client: ecr.NewFromConfig(cfg)}
+	}
 
 	backoffSettings := backoff.NewExponentialBackOff()
 	backoffSettings.InitialInterval = 1 * time.Second
@@ -159,7 +185,7 @@ func main() {
 	log.Info("Done")
 }
 
-func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm *ecrManager) {
+func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm ecrManager) {
 	log.Debug("Starting worker")
 
 	for {
