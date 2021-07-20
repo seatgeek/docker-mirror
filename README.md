@@ -2,7 +2,7 @@
 
 [![build](https://github.com/seatgeek/docker-mirror/actions/workflows/build.yml/badge.svg)](https://github.com/seatgeek/docker-mirror/actions/workflows/build.yml)
 
-This project will copy public DockerHub repositories to a private registry.
+This project will copy public DockerHub, Quay or GCR repositories to a private registry.
 
 <!-- TOC -->
 
@@ -55,6 +55,8 @@ There are several configuration options you can use in your `config.yaml` below.
 
 - `name:` This option sets the name of your repository. (i.e. `name: elasticsearch`)
 
+- `host:` This options sets where do you want to mirror repositories from. Accepted values include `hub.docker.com`, `quay.io` and `gcr.io`. If not set, images will be pulled from Docker Hub.
+
 - `private_registry:` This option allows you to set a private Docker registry prefix for docker pulls. It will prefix any of your `name:` options with the `private_registry` name and a slash to allow you to customize where your images are being pulled through. This is particularly useful if you use a proxy to dockerhub. i.e. (`private_registry: "private-registry-name"`)
 
 ### Adding new mirror repository
@@ -99,12 +101,16 @@ repositories:
       - "*-alpine" # support both glob or specific strings
 
   - name: yotpo/resec
+    host: hub.docker.com # mirror the repository from Docker Hub
     max_tag_age: 8w # only import tags that are 8w or less old
 
   - name: jippi/hashi-ui
     max_tags: 10 # only copy the 10 latest tags
     match_tag:
       - "v*"
+        
+  - name: kubebuilder/kube-rbac-proxy
+    host: gcr.io # mirror the repository from Google Container Registry 
 
   - name: jippi/go-metadataproxy # import all tags
 ```

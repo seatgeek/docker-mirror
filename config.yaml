@@ -30,3 +30,7 @@ repositories:
     match_tag:
       - "v*"
 
+  - name: kubebuilder/kube-rbac-proxy
+    host: gcr.io
+    match_tag:
+      - "v*"

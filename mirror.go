@@ -18,26 +18,46 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	dockerHub = "hub.docker.com"
+	quay      = "quay.io"
+	gcr       = "gcr.io"
+)
+
 var (
 	httpClient = &http.Client{Timeout: 10 * time.Second}
 )
 
-// TagsResponse is Docker Registry v2 compatible struct
-type TagsResponse struct {
+// DockerTagsResponse is Docker Registry v2 compatible struct
+type DockerTagsResponse struct {
 	Count    int             `json:"count"`
 	Next     *string         `json:"next"`
 	Previous *string         `json:"previous"`
 	Results  []RepositoryTag `json:"results"`
 }
 
-// RepositoryTag is Docker Registry v2 compatible struct, holding the indiviual
-// tags for the requested repository
-type RepositoryTag struct {
-	Name        string    `json:"name"`
-	LastUpdated time.Time `json:"last_updated"`
+// QuayTagsResponse is Quay API v1 compatible struct
+type QuayTagsResponse struct {
+	HasAdditional bool            `json:"has_additional"`
+	Page          int             `json:"page"`
+	Tags          []RepositoryTag `json:"tags"`
 }
 
-// logWriter is a io.Writer compatible wrapper, piping the outputt
+// GCRTagsResponse is GCR API v2 compatible struct
+type GCRTagsResponse struct {
+	Name string   `json:"name"`
+	Tags []string `json:"tags"`
+}
+
+// RepositoryTag is Docker, Quay, GCR API compatible struct, holding the individual
+// tags for the requested repository
+type RepositoryTag struct {
+	Name         string    `json:"name"`
+	LastUpdated  time.Time `json:"last_updated"`
+	LastModified time.Time `json:"last_modified"`
+}
+
+// logWriter is a io.Writer compatible wrapper, piping the output
 // to a specific logrus entry
 type logWriter struct {
 	logger *log.Entry
@@ -169,22 +189,30 @@ func (m *mirror) pullImage(tag string) error {
 	defer m.timeTrack(time.Now(), "Completed docker pull")
 
 	pullOptions := docker.PullImageOptions{
-		Repository:        m.repo.Name,
 		Tag:               tag,
 		InactivityTimeout: 1 * time.Minute,
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "pull")},
 	}
-
 	authConfig := docker.AuthConfiguration{}
-	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
-		m.log.Info("Using docker hub credentials from environment")
-		authConfig.Username = os.Getenv("DOCKERHUB_USER")
-		authConfig.Password = os.Getenv("DOCKERHUB_PASSWORD")
-	}
 
-	if m.repo.PrivateRegistry != "" {
-		pullOptions.Repository = m.repo.PrivateRegistry + "/" + m.repo.Name
-		return (*m.dockerClient).PullImage(pullOptions, authConfig)
+	switch m.repo.Host {
+	case dockerHub:
+		pullOptions.Repository = m.repo.Name
+
+		if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+			m.log.Info("Using docker hub credentials from environment")
+			authConfig.Username = os.Getenv("DOCKERHUB_USER")
+			authConfig.Password = os.Getenv("DOCKERHUB_PASSWORD")
+		}
+
+		if m.repo.PrivateRegistry != "" {
+			pullOptions.Repository = m.repo.PrivateRegistry + "/" + m.repo.Name
+			return (*m.dockerClient).PullImage(pullOptions, authConfig)
+		}
+	case quay:
+		pullOptions.Repository = quay + "/" + m.repo.Name
+	case gcr:
+		pullOptions.Repository = gcr + "/" + m.repo.Name
 	}
 
 	return (*m.dockerClient).PullImage(pullOptions, authConfig)
@@ -201,7 +229,16 @@ func (m *mirror) tagImage(tag string) error {
 		Force: true,
 	}
 
-	return (*m.dockerClient).TagImage(fmt.Sprintf("%s:%s", m.repo.Name, tag), tagOptions)
+	switch m.repo.Host {
+	case dockerHub:
+		return (*m.dockerClient).TagImage(fmt.Sprintf("%s:%s", m.repo.Name, tag), tagOptions)
+	case quay:
+		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag), tagOptions)
+	case gcr:
+		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag), tagOptions)
+	}
+
+	return nil
 }
 
 // push the local (re)tagged image to the target docker registry
@@ -235,7 +272,15 @@ func (m *mirror) pushImage(tag string) error {
 }
 
 func (m *mirror) deleteImage(tag string) error {
-	repository := fmt.Sprintf("%s:%s", m.repo.Name, tag)
+	var repository string
+	switch m.repo.Host {
+	case dockerHub:
+		repository = fmt.Sprintf("%s:%s", m.repo.Name, tag)
+	case quay:
+		repository = fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag)
+	case gcr:
+		repository = fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag)
+	}
 	m.log.Info("Cleaning images: " + repository)
 	err := (*m.dockerClient).RemoveImage(repository)
 	if err != nil {
@@ -293,8 +338,8 @@ func (m *mirror) work() {
 	m.log.Info("Repository mirror completed")
 }
 
-// get the remote tags from the remote (v2) compatible registry.
-// read out the image tag and when it was updated, and sort by the updated time
+// get the remote tags from the remote compatible registry.
+// read out the image tag and when it was updated, and sort by the updated time if applicable
 func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 	if m.repo.RemoteTagSource == "github" {
 		client := github.NewClient(nil)
@@ -318,39 +363,50 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		return allTags, nil
 	}
 
-	// docker hub
+	// Get tags information from Docker Hub, Quay or GCR.
+	var url string
 	fullRepoName := m.repo.Name
-	if !strings.Contains(fullRepoName, "/") {
-		fullRepoName = "library/" + m.repo.Name
-	}
+	token := ""
 
-	var token string
-	if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
-		m.log.Info("Getting tags using docker hub credentials from environment")
-
-		message, err := json.Marshal(map[string]string{
-			"username": os.Getenv("DOCKERHUB_USER"),
-			"password": os.Getenv("DOCKERHUB_PASSWORD"),
-		})
-
-		if err != nil {
-			return nil, err
+	switch m.repo.Host {
+	case dockerHub:
+		if !strings.Contains(fullRepoName, "/") {
+			fullRepoName = "library/" + m.repo.Name
 		}
 
-		resp, err := http.Post("https://hub.docker.com/v2/users/login/", "application/json", bytes.NewBuffer(message))
-		if err != nil {
-			return nil, err
+		if os.Getenv("DOCKERHUB_USER") != "" && os.Getenv("DOCKERHUB_PASSWORD") != "" {
+			m.log.Info("Getting tags using docker hub credentials from environment")
+
+			message, err := json.Marshal(map[string]string{
+				"username": os.Getenv("DOCKERHUB_USER"),
+				"password": os.Getenv("DOCKERHUB_PASSWORD"),
+			})
+
+			if err != nil {
+				return nil, err
+			}
+
+			resp, err := http.Post("https://hub.docker.com/v2/users/login/", "application/json", bytes.NewBuffer(message))
+			if err != nil {
+				return nil, err
+			}
+
+			var result map[string]interface{}
+
+			json.NewDecoder(resp.Body).Decode(&result)
+			token = result["token"].(string)
 		}
 
-		var result map[string]interface{}
-
-		json.NewDecoder(resp.Body).Decode(&result)
-		token = result["token"].(string)
+		url = fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
+	case quay:
+		url = fmt.Sprintf("https://quay.io/api/v1/repository/%s/tag", fullRepoName)
+	case gcr:
+		url = fmt.Sprintf("https://gcr.io/v2/%s/tags/list", fullRepoName)
 	}
-
-	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
 
 	var allTags []RepositoryTag
+
+search:
 	for {
 		var (
 			err     error
@@ -393,23 +449,53 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		}
 		defer res.Body.Close()
 
-		var tags TagsResponse
-		if err := json.NewDecoder(res.Body).Decode(&tags); err != nil {
-			return nil, err
-		}
+		dc := json.NewDecoder(res.Body)
 
-		allTags = append(allTags, tags.Results...)
-		if tags.Next == nil {
-			break
-		}
+		switch m.repo.Host {
+		case dockerHub:
+			var tags DockerTagsResponse
+			if err = dc.Decode(&tags); err != nil {
+				return nil, err
+			}
 
-		url = *tags.Next
+			allTags = append(allTags, tags.Results...)
+			if tags.Next == nil {
+				break search
+			}
+
+			url = *tags.Next
+		case quay:
+			var tags QuayTagsResponse
+			if err := dc.Decode(&tags); err != nil {
+				return nil, err
+			}
+			allTags = append(allTags, tags.Tags...)
+			break search
+		case gcr:
+			var tags GCRTagsResponse
+			if err := dc.Decode(&tags); err != nil {
+				return nil, err
+			}
+			for _, tag := range tags.Tags {
+				allTags = append(allTags, RepositoryTag{
+					Name: tag,
+				})
+			}
+			break search
+		}
 	}
 
-	// sort the tags by updated time, newest first
-	sort.Slice(allTags, func(i, j int) bool {
-		return allTags[i].LastUpdated.After(allTags[j].LastUpdated)
-	})
+	// sort the tags by updated/modified time if applicable, newest first
+	switch m.repo.Host {
+	case dockerHub:
+		sort.Slice(allTags, func(i, j int) bool {
+			return allTags[i].LastUpdated.After(allTags[j].LastUpdated)
+		})
+	case quay:
+		sort.Slice(allTags, func(i, j int) bool {
+			return allTags[i].LastModified.After(allTags[j].LastModified)
+		})
+	}
 
 	return allTags, nil
 }

@@ -95,6 +95,7 @@ func TestPullImage(t *testing.T) {
 		repo := Repository{
 			PrivateRegistry: "private-registry-name",
 			Name:            "elasticsearch",
+			Host:            "hub.docker.com",
 		}
 
 		m := mirror{
@@ -118,6 +119,7 @@ func TestPullImage(t *testing.T) {
 		client = CreateTestDockerClient(responseContainer)
 		repo := Repository{
 			Name: "elasticsearch",
+			Host: "hub.docker.com",
 		}
 
 		m := mirror{
