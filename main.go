@@ -22,7 +22,7 @@ import (
 
 const (
 	ecrPublicRegistryPrefix = "public.ecr.aws"
-	ecrPublicRegion = "us-east-1"
+	ecrPublicRegion         = "us-east-1"
 )
 
 var (
