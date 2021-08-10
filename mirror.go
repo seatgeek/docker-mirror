@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -22,10 +23,12 @@ const (
 	dockerHub = "hub.docker.com"
 	quay      = "quay.io"
 	gcr       = "gcr.io"
+	k8s_gcr   = "k8s.gcr.io"
 )
 
 var (
-	httpClient = &http.Client{Timeout: 10 * time.Second}
+	PTransport = & http.Transport { Proxy: http.ProxyFromEnvironment }
+	httpClient = & http.Client { Timeout: 10 * time.Second, Transport: PTransport }
 )
 
 // DockerTagsResponse is Docker Registry v2 compatible struct
@@ -213,6 +216,8 @@ func (m *mirror) pullImage(tag string) error {
 		pullOptions.Repository = quay + "/" + m.repo.Name
 	case gcr:
 		pullOptions.Repository = gcr + "/" + m.repo.Name
+	case k8s_gcr:
+		pullOptions.Repository = k8s_gcr + "/" + m.repo.Name
 	}
 
 	return (*m.dockerClient).PullImage(pullOptions, authConfig)
@@ -236,6 +241,8 @@ func (m *mirror) tagImage(tag string) error {
 		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag), tagOptions)
 	case gcr:
 		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag), tagOptions)
+	case k8s_gcr:
+		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", k8s_gcr, m.repo.Name, tag), tagOptions)
 	}
 
 	return nil
@@ -280,6 +287,8 @@ func (m *mirror) deleteImage(tag string) error {
 		repository = fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag)
 	case gcr:
 		repository = fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag)
+	case k8s_gcr:
+		repository = fmt.Sprintf("%s/%s:%s", k8s_gcr, m.repo.Name, tag)
 	}
 	m.log.Info("Cleaning images: " + repository)
 	err := (*m.dockerClient).RemoveImage(repository)
@@ -318,6 +327,10 @@ func (m *mirror) work() {
 			m.log.Errorf("Failed to (re)tag docker image: %s", err)
 			continue
 		}
+
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter any key to contine: ")
+		_, _ = reader.ReadString('\n')
 
 		if err := m.pushImage(tag.Name); err != nil {
 			m.log.Errorf("Failed to push (re)tagged image: %s", err)
@@ -363,7 +376,7 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		return allTags, nil
 	}
 
-	// Get tags information from Docker Hub, Quay or GCR.
+	// Get tags information from Docker Hub, Quay, GCR or k8s.gcr.io.
 	var url string
 	fullRepoName := m.repo.Name
 	token := ""
@@ -402,6 +415,8 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		url = fmt.Sprintf("https://quay.io/api/v1/repository/%s/tag", fullRepoName)
 	case gcr:
 		url = fmt.Sprintf("https://gcr.io/v2/%s/tags/list", fullRepoName)
+	case k8s_gcr:
+		url = fmt.Sprintf("https://k8s.gcr.io/v2/%s/tags/list", fullRepoName) 
 	}
 
 	var allTags []RepositoryTag
@@ -428,6 +443,7 @@ search:
 			res, err = httpClient.Do(req)
 
 			if err != nil {
+				m.log.Warningf(err.Error())	
 				m.log.Warningf("Failed to get %s, retrying", url)
 				retries--
 			} else if res.StatusCode == 429 {
@@ -472,6 +488,17 @@ search:
 			allTags = append(allTags, tags.Tags...)
 			break search
 		case gcr:
+			var tags GCRTagsResponse
+			if err := dc.Decode(&tags); err != nil {
+				return nil, err
+			}
+			for _, tag := range tags.Tags {
+				allTags = append(allTags, RepositoryTag{
+					Name: tag,
+				})
+			}
+			break search
+		case k8s_gcr:
 			var tags GCRTagsResponse
 			if err := dc.Decode(&tags); err != nil {
 				return nil, err
