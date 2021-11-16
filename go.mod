@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.1.1
-	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.7.0
+	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.8.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/containerd/continuity v0.0.0-20180322171221-3e8f2ea4b190 // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20180323031653-57c504799d97+incompatible // indirect
