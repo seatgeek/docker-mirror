@@ -18,7 +18,7 @@ require (
 	github.com/docker/go-units v0.3.2 // indirect
 	github.com/fsouza/go-dockerclient v1.2.0
 	github.com/gogo/protobuf v1.0.0 // indirect
-	github.com/google/go-github v15.0.0+incompatible
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
