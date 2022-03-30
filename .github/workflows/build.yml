@@ -6,15 +6,15 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-    - name: Setup go
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.15
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Build
-      run: make -j dist
-    - name: Test
-      run: go test -timeout=600s -v
-    - name: List output
-      run: ls -la build
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Build
+        run: make -j dist
+      - name: Test
+        run: go test -timeout=600s -v
+      - name: List output
+        run: ls -la build
