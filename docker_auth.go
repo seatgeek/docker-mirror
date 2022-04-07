@@ -1,12 +1,10 @@
 //go:build !darwin
-// +build !darwin
 
 package main
 
 import (
 	"fmt"
 
-	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
