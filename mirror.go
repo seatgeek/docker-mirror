@@ -113,7 +113,7 @@ func (m *mirror) setup(repo Repository) (err error) {
 
 // filter tags by
 //  - by matching tag name (with glob support)
-//  - by exluding tag name (with glob support)
+//  - by excluding tag name (with glob support)
 //  - by tag age
 //  - by max number of tags to process
 func (m *mirror) filterTags() {
@@ -175,8 +175,8 @@ func (m *mirror) filterTags() {
 	m.remoteTags = res
 }
 
-// return the name of repostiory, as it should be on the target
-// this include any target repository prefix + the repository name in DockerHub
+// return the name of repository, as it should be on the target
+// this includes any target repository prefix + the repository name in DockerHub
 func (m *mirror) targetRepositoryName() string {
 	if m.repo.TargetPrefix != nil {
 		return fmt.Sprintf("%s%s", *m.repo.TargetPrefix, m.repo.Name)
