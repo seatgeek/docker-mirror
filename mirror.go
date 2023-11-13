@@ -184,7 +184,7 @@ func (m *mirror) pullImage(tag string) error {
 
 	pullOptions := docker.PullImageOptions{
 		Tag:               tag,
-		InactivityTimeout: 1 * time.Minute,
+		InactivityTimeout: time.Duration(getEnvInt("PULL_INACTIVITY_MINUTES", 2)) * time.Minute,
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "pull")},
 	}
 	authConfig := docker.AuthConfiguration{}
@@ -241,7 +241,7 @@ func (m *mirror) pushImage(tag string) error {
 		Registry:          config.Target.Registry,
 		Tag:               tag,
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "push")},
-		InactivityTimeout: 1 * time.Minute,
+		InactivityTimeout: time.Duration(getEnvInt("PUSH_INACTIVITY_MINUTES", 2)) * time.Minute,
 	}
 
 	var (
@@ -503,4 +503,18 @@ func getSleepTime(rateLimitReset string, now time.Time) time.Duration {
 	}
 
 	return calculatedSleepTime
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+
+	intVal, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+
+	return intVal
 }
