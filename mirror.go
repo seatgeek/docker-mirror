@@ -13,6 +13,8 @@ import (
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-github/github"
 	"github.com/ryanuber/go-glob"
 	log "github.com/sirupsen/logrus"
@@ -20,9 +22,6 @@ import (
 
 const (
 	dockerHub = "hub.docker.com"
-	quay      = "quay.io"
-	gcr       = "gcr.io"
-	k8s       = "k8s.gcr.io"
 )
 
 var (
@@ -36,13 +35,6 @@ type DockerTagsResponse struct {
 	Next     *string         `json:"next"`
 	Previous *string         `json:"previous"`
 	Results  []RepositoryTag `json:"results"`
-}
-
-// QuayTagsResponse is Quay API v1 compatible struct
-type QuayTagsResponse struct {
-	HasAdditional bool            `json:"has_additional"`
-	Page          int             `json:"page"`
-	Tags          []RepositoryTag `json:"tags"`
 }
 
 // GCRTagsResponse is GCR API v2 compatible struct
@@ -112,10 +104,10 @@ func (m *mirror) setup(repo Repository) (err error) {
 }
 
 // filter tags by
-//  - by matching tag name (with glob support)
-//  - by exluding tag name (with glob support)
-//  - by tag age
-//  - by max number of tags to process
+//   - by matching tag name (with glob support)
+//   - by exluding tag name (with glob support)
+//   - by tag age
+//   - by max number of tags to process
 func (m *mirror) filterTags() {
 	now := time.Now()
 	res := make([]RepositoryTag, 0)
@@ -192,7 +184,7 @@ func (m *mirror) pullImage(tag string) error {
 
 	pullOptions := docker.PullImageOptions{
 		Tag:               tag,
-		InactivityTimeout: 1 * time.Minute,
+		InactivityTimeout: time.Duration(getEnvInt("PULL_INACTIVITY_MINUTES", 2)) * time.Minute,
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "pull")},
 	}
 	authConfig := docker.AuthConfiguration{}
@@ -211,12 +203,8 @@ func (m *mirror) pullImage(tag string) error {
 			pullOptions.Repository = m.repo.PrivateRegistry + "/" + m.repo.Name
 			return (*m.dockerClient).PullImage(pullOptions, authConfig)
 		}
-	case quay:
-		pullOptions.Repository = quay + "/" + m.repo.Name
-	case gcr:
-		pullOptions.Repository = gcr + "/" + m.repo.Name
-	case k8s:
-		pullOptions.Repository = k8s + "/" + m.repo.Name
+	default:
+		pullOptions.Repository = m.repo.Host + "/" + m.repo.Name
 	}
 
 	return (*m.dockerClient).PullImage(pullOptions, authConfig)
@@ -236,12 +224,8 @@ func (m *mirror) tagImage(tag string) error {
 	switch m.repo.Host {
 	case dockerHub:
 		return (*m.dockerClient).TagImage(fmt.Sprintf("%s:%s", m.repo.Name, tag), tagOptions)
-	case quay:
-		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag), tagOptions)
-	case gcr:
-		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag), tagOptions)
-	case k8s:
-		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", k8s, m.repo.Name, tag), tagOptions)
+	default:
+		return (*m.dockerClient).TagImage(fmt.Sprintf("%s/%s:%s", m.repo.Host, m.repo.Name, tag), tagOptions)
 	}
 
 	return nil
@@ -257,7 +241,7 @@ func (m *mirror) pushImage(tag string) error {
 		Registry:          config.Target.Registry,
 		Tag:               tag,
 		OutputStream:      &logWriter{logger: m.log.WithField("docker_action", "push")},
-		InactivityTimeout: 1 * time.Minute,
+		InactivityTimeout: time.Duration(getEnvInt("PUSH_INACTIVITY_MINUTES", 2)) * time.Minute,
 	}
 
 	var (
@@ -282,12 +266,8 @@ func (m *mirror) deleteImage(tag string) error {
 	switch m.repo.Host {
 	case dockerHub:
 		repository = fmt.Sprintf("%s:%s", m.repo.Name, tag)
-	case quay:
-		repository = fmt.Sprintf("%s/%s:%s", quay, m.repo.Name, tag)
-	case gcr:
-		repository = fmt.Sprintf("%s/%s:%s", gcr, m.repo.Name, tag)
-	case k8s:
-		repository = fmt.Sprintf("%s/%s:%s", k8s, m.repo.Name, tag)
+	default:
+		repository = fmt.Sprintf("%s/%s:%s", m.repo.Host, m.repo.Name, tag)
 	}
 	m.log.Info("Cleaning images: " + repository)
 	err := (*m.dockerClient).RemoveImage(repository)
@@ -406,99 +386,83 @@ func (m *mirror) getRemoteTags() ([]RepositoryTag, error) {
 		}
 
 		url = fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/%s/tags/?page_size=2048", fullRepoName)
-	case quay:
-		url = fmt.Sprintf("https://quay.io/api/v1/repository/%s/tag", fullRepoName)
-	case gcr:
-		url = fmt.Sprintf("https://gcr.io/v2/%s/tags/list", fullRepoName)
-	case k8s:
-		url = fmt.Sprintf("https://k8s.gcr.io/v2/%s/tags/list", fullRepoName)
 	}
 
 	var allTags []RepositoryTag
 
 search:
 	for {
-		var (
-			err     error
-			res     *http.Response
-			req     *http.Request
-			retries int = 5
-		)
+		// For dockerhub we use specific API endpoints that return the last updated timestamp
+		if m.repo.Host == dockerHub {
+			var (
+				err     error
+				res     *http.Response
+				req     *http.Request
+				retries int = 5
+			)
 
-		for retries > 0 {
-			req, err = http.NewRequest("GET", url, nil)
+			for retries > 0 {
+				req, err = http.NewRequest("GET", url, nil)
+				if err != nil {
+					return nil, err
+				}
+
+				if token != "" {
+					req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+				}
+
+				res, err = httpClient.Do(req)
+
+				if err != nil {
+					m.log.Warningf(err.Error())
+					m.log.Warningf("Failed to get %s, retrying", url)
+					retries--
+				} else if res.StatusCode == 429 {
+					sleepTime := getSleepTime(res.Header.Get("X-RateLimit-Reset"), time.Now())
+					m.log.Infof("Rate limited on %s, sleeping for %s", url, sleepTime)
+					time.Sleep(sleepTime)
+					retries--
+				} else if res.StatusCode < 200 || res.StatusCode >= 300 {
+					m.log.Warningf("Get %s failed with %d, retrying", url, res.StatusCode)
+					retries--
+				} else {
+					break
+				}
+
+			}
+
 			if err != nil {
 				return nil, err
 			}
+			defer res.Body.Close()
 
-			if token != "" {
-				req.Header.Set("Authorization", fmt.Sprintf("JWT %s", token))
+			dc := json.NewDecoder(res.Body)
+			switch m.repo.Host {
+			case dockerHub:
+				var tags DockerTagsResponse
+				if err = dc.Decode(&tags); err != nil {
+					return nil, err
+				}
+
+				allTags = append(allTags, tags.Results...)
+				if tags.Next == nil {
+					break search
+				}
+
+				url = *tags.Next
 			}
-
-			res, err = httpClient.Do(req)
-
+		} else
+		// For all other registries we use go-containerregistry which will call /tags/list
+		{
+			repo, err := name.NewRepository(m.repo.Host + "/" + m.repo.Name)
 			if err != nil {
-				m.log.Warningf(err.Error())
-				m.log.Warningf("Failed to get %s, retrying", url)
-				retries--
-			} else if res.StatusCode == 429 {
-				sleepTime := getSleepTime(res.Header.Get("X-RateLimit-Reset"), time.Now())
-				m.log.Infof("Rate limited on %s, sleeping for %s", url, sleepTime)
-				time.Sleep(sleepTime)
-				retries--
-			} else if res.StatusCode < 200 || res.StatusCode >= 300 {
-				m.log.Warningf("Get %s failed with %d, retrying", url, res.StatusCode)
-				retries--
-			} else {
-				break
-			}
-
-		}
-
-		if err != nil {
-			return nil, err
-		}
-		defer res.Body.Close()
-
-		dc := json.NewDecoder(res.Body)
-
-		switch m.repo.Host {
-		case dockerHub:
-			var tags DockerTagsResponse
-			if err = dc.Decode(&tags); err != nil {
 				return nil, err
 			}
-
-			allTags = append(allTags, tags.Results...)
-			if tags.Next == nil {
-				break search
-			}
-
-			url = *tags.Next
-		case quay:
-			var tags QuayTagsResponse
-			if err := dc.Decode(&tags); err != nil {
+			tags, err := remote.List(repo)
+			if err != nil {
 				return nil, err
 			}
-			allTags = append(allTags, tags.Tags...)
-			break search
-		case gcr:
-			var tags GCRTagsResponse
-			if err := dc.Decode(&tags); err != nil {
-				return nil, err
-			}
-			for _, tag := range tags.Tags {
-				allTags = append(allTags, RepositoryTag{
-					Name: tag,
-				})
-			}
-			break search
-		case k8s:
-			var tags GCRTagsResponse
-			if err := dc.Decode(&tags); err != nil {
-				return nil, err
-			}
-			for _, tag := range tags.Tags {
+			for _, tag := range tags {
 				allTags = append(allTags, RepositoryTag{
 					Name: tag,
 				})
@@ -512,10 +476,6 @@ search:
 	case dockerHub:
 		sort.Slice(allTags, func(i, j int) bool {
 			return allTags[i].LastUpdated.After(allTags[j].LastUpdated)
-		})
-	case quay:
-		sort.Slice(allTags, func(i, j int) bool {
-			return allTags[i].LastModified.After(allTags[j].LastModified)
 		})
 	}
 
@@ -543,4 +503,18 @@ func getSleepTime(rateLimitReset string, now time.Time) time.Duration {
 	}
 
 	return calculatedSleepTime
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+
+	intVal, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+
+	return intVal
 }

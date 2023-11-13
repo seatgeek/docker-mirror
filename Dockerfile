@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine
+FROM golang:1.20-alpine
 # Adding ca-certificates for external communication and git for dependency installation
 RUN apk add --no-cache ca-certificates git
 WORKDIR /go/src/github.com/seatgeek/docker-mirror/
